@@ -1,22 +1,21 @@
 const express = require('express');
 const http = require('http');
+const path = require('path'); // <-- Import the 'path' module
 const { Server } = require("socket.io");
-const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = process.env.PORT || 3000; // Use environment port or default to 3000
+const PORT = process.env.PORT || 3000;
 
 // --- Static Middleware FIRST ---
-// Serve static files (index.html, client.js, style.css) from the 'public' directory
-// This handles requests for /, /client.js, /style.css etc. directly.
-app.use(express.static('public'));
+// Serve MOST static files (like CSS, maybe images later)
+app.use(express.static(path.join(__dirname, 'public'))); // Use path.join for robustness
 
 // --- In-memory Storage ---
-// Replace with a database (e.g., Redis, MongoDB) for production persistence
-let games = {}; // { gameId: { phase, expectedPlayers, loggedInPlayers, submittedPlayers, drafts, playerData, creatorSocketId } }
+let games = {};
 
 // --- Player Data (MUST BE CONSISTENT WITH client.js) ---
 const playersData = [
@@ -80,6 +79,7 @@ const playersData = [
     { name: "Javontez Spraggins", position: "IOL", school: "Tennessee" },
     { name: "Luke Kandra", position: "IOL", school: "Louisville" },
 
+
     // EDGE
     { name: "James Pearce Jr.", position: "EDGE", school: "Tennessee" },
     { name: "Abdul Carter", position: "EDGE", school: "Penn State" },
@@ -130,6 +130,7 @@ const playersData = [
     { name: "Woody Washington", position: "CB", school: "Penn State" },
     { name: "Fentrell Cypress II", position: "CB", school: "Florida State" },
 
+
     // S
     { name: "Malaki Starks", position: "S", school: "Georgia" },
     { name: "Caleb Downs", position: "S", school: "Ohio State" },
@@ -143,145 +144,30 @@ const playersData = [
 ];
 
 
+
+// --- Explicit Route for client.js (if needed) ---
+// Sometimes needed if static middleware has issues with specific paths after SPA routing
+// THIS SHOULD COME *AFTER* express.static but *BEFORE* the catch-all '*'
+// app.get('/client.js', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'public', 'client.js'));
+// });
+// --- Let's keep this commented out for now, as express.static SHOULD handle it ---
+
+
 // --- Socket.IO Logic ---
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
+    // ... (Keep ALL your existing socket.on(...) handlers here) ...
+    console.log(`User connected: ${socket.id}`); // Example log
 
-    // --- Game Setup ---
-    socket.on('setupGame', (playerNames) => {
-        try {
-            const gameId = uuidv4().substring(0, 6);
-            const expected = playerNames.map(name => name.trim()).filter(name => name.length > 0);
-
-            if (expected.length < 1) {
-                socket.emit('errorMsg', 'Please enter at least one player name.');
-                return;
-            }
-
-            games[gameId] = {
-                phase: 'login', expectedPlayers: expected, loggedInPlayers: {},
-                submittedPlayers: [], drafts: {}, creatorSocketId: socket.id,
-                playerData: playersData // Including player data with the game instance
-            };
-
-            console.log(`Game created: ${gameId} by ${socket.id}. Players: ${expected.join(', ')}`);
-            socket.join(gameId);
-            socket.gameId = gameId; // Store gameId on socket
-
-            socket.emit('gameCreated', { gameId, expectedPlayers: expected });
-
-        } catch (error) {
-            console.error("Error setting up game:", error);
-            socket.emit('errorMsg', 'Failed to create game.');
-        }
-    });
-
-    // --- Joining Game ---
-    socket.on('requestJoin', ({ gameId, username }) => {
-         console.log(`Received requestJoin: gameId=${gameId}, username=${username} from socket ${socket.id}`); // Keep this log
-        try {
-            const game = games[gameId];
-            if (!game) {
-                socket.emit('errorMsg', `Game "${gameId}" not found.`); return;
-            }
-            if (game.phase !== 'login' && game.phase !== 'drafting') {
-                socket.emit('errorMsg', `Game not accepting players now (Phase: ${game.phase}).`); return;
-            }
-            if (!game.expectedPlayers.includes(username)) {
-                socket.emit('errorMsg', `Username "${username}" not on player list.`); return;
-            }
-
-            const existingSocketId = game.loggedInPlayers[username];
-            if (existingSocketId && existingSocketId !== socket.id) {
-                 console.log(`User ${username} trying to join again (connected as ${existingSocketId}). Disconnecting old.`);
-                 const oldSocket = io.sockets.sockets.get(existingSocketId);
-                 if (oldSocket) {
-                     oldSocket.emit('forceDisconnect', 'Logged in from another location.');
-                     oldSocket.disconnect(true);
-                 }
-            } else if (existingSocketId === socket.id) {
-                 console.log(`User ${username} (${socket.id}) re-requesting join, resending state.`);
-                 socket.emit('joinSuccess', { username, gameState: getSanitizedGameState(gameId), draft: game.drafts[username] || null });
-                 return;
-            }
-
-            game.loggedInPlayers[username] = socket.id;
-            socket.join(gameId);
-            socket.username = username;
-            socket.gameId = gameId;
-
-            console.log(`User ${username} (${socket.id}) joined game ${gameId}`);
-            const userDraft = game.drafts[username] || null;
-            socket.emit('joinSuccess', { username, gameState: getSanitizedGameState(gameId), draft: userDraft });
-
-            io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId));
-
-            if (Object.keys(game.loggedInPlayers).length === game.expectedPlayers.length && game.phase === 'login') {
-                game.phase = 'drafting';
-                io.to(gameId).emit('gamePhaseChanged', 'drafting');
-                console.log(`Game ${gameId} starting - all players in.`);
-            }
-        } catch (error) {
-             console.error(`Error during join request for ${username} in game ${gameId}:`, error);
-             socket.emit('errorMsg', 'Error joining game.');
-        }
-    });
-
-     // --- Draft Update ---
-     socket.on('updateDraft', (draftPicks) => {
-        try {
-            const gameId = socket.gameId; const username = socket.username; const game = games[gameId];
-            if (!game || !username || game.phase !== 'drafting' || game.submittedPlayers.includes(username)) return;
-            game.drafts[username] = draftPicks;
-        } catch (error) { console.error(`Error updating draft for ${username} in game ${gameId}:`, error); }
-    });
-
-    // --- Submit Final Draft ---
-    socket.on('submitDraft', (finalDraftPicks) => {
-        try {
-            const gameId = socket.gameId; const username = socket.username; const game = games[gameId];
-            if (!game || !username || game.phase !== 'drafting' || game.submittedPlayers.includes(username)) return;
-
-            game.submittedPlayers.push(username);
-            game.drafts[username] = finalDraftPicks;
-            console.log(`User ${username} submitted final draft for game ${gameId}`);
-            socket.emit('submitSuccess');
-            io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId));
-
-            if (game.submittedPlayers.length === game.expectedPlayers.length) {
-                game.phase = 'reveal';
-                console.log(`Game ${gameId} entering reveal phase.`);
-                io.to(gameId).emit('revealAllDrafts', game.drafts);
-                io.to(gameId).emit('gamePhaseChanged', 'reveal');
-            }
-        } catch (error) {
-             console.error(`Error submitting draft for ${username} in game ${gameId}:`, error);
-             socket.emit('errorMsg', 'Error submitting draft.');
-        }
-    });
-
-    // --- Handle Disconnect ---
-    socket.on('disconnect', (reason) => {
-        console.log(`User disconnected: ${socket.id}, Reason: ${reason}`);
-        try {
-            const gameId = socket.gameId; const username = socket.username;
-            if (gameId && games[gameId] && username) {
-                 const game = games[gameId];
-                 if (game.loggedInPlayers[username] === socket.id) {
-                    delete game.loggedInPlayers[username];
-                    console.log(`User ${username} removed from loggedInPlayers in game ${gameId}.`);
-                    if (game.phase !== 'reveal') {
-                         io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId));
-                    }
-                 }
-            }
-        } catch (error) { console.error(`Error during disconnect handling for ${socket.id}:`, error); }
-    });
-
+     socket.on('disconnect', (reason) => {
+         console.log(`User disconnected: ${socket.id}, Reason: ${reason}`);
+         // ... disconnect logic ...
+     });
 }); // --- END of io.on('connection', ...) ---
 
 
 // --- Helper function for Game State ---
+// ... (Keep your getSanitizedGameState function here) ...
 function getSanitizedGameState(gameId) {
     const game = games[gameId];
     if (!game) return null;
@@ -292,12 +178,12 @@ function getSanitizedGameState(gameId) {
     };
 }
 
+
 // --- Catch-all Route LAST ---
-// This sends index.html for any GET request not handled by express.static
-// Allows client-side routing/handling of /game/gameId paths
+// This sends index.html for any GET request not handled by express.static or specific routes above
 app.get('*', (req, res) => {
-    console.log(`Serving index.html for path: ${req.path}`); // Log which paths hit this
-    res.sendFile(__dirname + '/public/index.html');
+    console.log(`Catch-all: Serving index.html for path: ${req.path}`);
+    res.sendFile(path.join(__dirname, 'public', 'index.html')); // Use path.join
 });
 
 
