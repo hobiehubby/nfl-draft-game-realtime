@@ -217,8 +217,18 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('connect', () => {
         console.log('Connected to server with ID:', socket.id);
         clearStatus(generalStatus);
-        // Check URL for game ID on initial connect or reconnect
-        handleUrlGameId();
+    
+        // --- MODIFICATION START ---
+        // Determine initial phase based on URL *before* doing anything else
+        handleUrlGameId(); // This sets currentGameId and currentPhase
+    
+        // Now update the UI based on the phase determined by the URL
+        updateUIBasedOnState();
+        // --- MODIFICATION END ---
+    
+        // Note: We don't emit 'requestJoin' automatically here.
+        // User needs to enter username in the login screen if currentPhase is 'login'.
+        // If currentPhase remained 'setup', the setup screen is shown.
     });
 
     socket.on('disconnect', (reason) => {
