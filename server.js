@@ -148,11 +148,10 @@ const playersData = [
     ];
     // --- End Player Data ---
 
-// Route for joining a specific game via link
-app.get('/game/:gameId', (req, res) => {
-    // Serve the main index.html, client-side JS will handle joining the game
-    res.sendFile(__dirname + '/public/index.html');
-});
+// // Route for joining a specific game via link  <-- COMMENT OUT/DELETE
+// app.get('/game/:gameId', (req, res) => {      <-- COMMENT OUT/DELETE
+//     res.sendFile(__dirname + '/public/index.html'); <-- COMMENT OUT/DELETE
+// });                                            <-- COMMENT OUT/DELETE
 
 
 io.on('connection', (socket) => {
