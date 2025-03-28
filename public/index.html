@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NFL Draft Prediction 2025 - Real-Time</title>
+    <!-- Include Socket.IO client library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Include SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Link to your CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Defer loading client.js until HTML is parsed -->
+    <script src="client.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>2025 NFL Draft Prediction Game - Real-Time</h1>
+    </header>
+
+    <!-- Phase 1: Setup -->
+    <div id="setupSection" class="section">
+        <h2>Game Setup</h2>
+        <label for="playerNamesInput">Enter Player Names (comma-separated):</label>
+        <textarea id="playerNamesInput" placeholder="e.g., Alice, Bob, Charlie" rows="3"></textarea>
+        <button id="setupButton">Create Game</button>
+        <p id="setupError" class="error-message"></p>
+    </div>
+
+     <!-- Share Link Section (Shown after setup) -->
+    <div id="shareSection" class="section" style="display: none;">
+        <h2>Game Created!</h2>
+        <p>Share this link with the other players:</p>
+        <input type="text" id="shareLinkInput" readonly>
+        <button id="copyLinkButton">Copy Link</button>
+        <p>Waiting for players to join...</p>
+         <ul id="lobbyPlayerList" class="player-list"></ul>
+         <div id="lobbyStatus" class="status-message"></div>
+    </div>
+
+    <!-- Phase 2: Login (Shown if joining via link) -->
+    <div id="loginSection" class="section" style="display: none;">
+        <h2 id="loginHeader">Join Game</h2>
+        <p>Expected Players:</p>
+        <ul id="loginPlayerList" class="player-list"></ul>
+        <label for="usernameInput">Enter Your Name (exactly as setup):</label>
+        <input type="text" id="usernameInput" placeholder="Your Name">
+        <button id="loginButton">Join Game</button>
+        <div id="loginStatus" class="status-message error"></div> <!-- Changed class -->
+    </div>
+
+    <!-- Phase 3 & 4: Drafting & Reveal Container -->
+    <div class="container" id="draftContainer" style="display:none;">
+        <div id="gameInfo" class="status-message info">Game ID: <span id="gameIdDisplay">N/A</span></div> <!-- Added class -->
+        <div id="currentUserInfo" class="status-message info"></div> <!-- Added class -->
+        <div class="filters">
+            <input type="text" id="searchFilter" placeholder="Search players...">
+            <select id="positionFilter">
+                 <option value="">All Positions</option>
+                <option value="QB">QB</option>
+                <option value="WR">WR</option>
+                <option value="RB">RB</option>
+                <option value="TE">TE</option>
+                <option value="OT">OT</option>
+                <option value="IOL">IOL</option>
+                <option value="EDGE">EDGE</option>
+                <option value="DL">DL</option>
+                <option value="LB">LB</option>
+                <option value="CB">CB</option>
+                <option value="S">S</option>
+                <option value="WR/CB">WR/CB</option>
+            </select>
+            <select id="schoolFilter">
+                <option value="">All Schools</option>
+                <!-- Options populated by client.js -->
+            </select>
+        </div>
+
+        <div class="lists-wrapper">
+            <div class="list" id="availablePlayersContainer">
+                <h2>Available Players</h2>
+                <div id="availablePlayersList">
+                    <!-- Players populated by client.js -->
+                </div>
+            </div>
+            <div class="list" id="draftOrder">
+                <h2>Your Draft Picks (<span id="pickRange">#1 - #32</span>)</h2>
+                <div id="draftSlots">
+                    <!-- Slots populated by client.js -->
+                </div>
+                 <button id="resetDraftButton" class="secondary">Reset Your Current Draft</button>
+            </div>
+        </div>
+
+        <button id="submitBtn">Submit Final Draft</button>
+        <div class="status-message info" id="submissionStatus">Game status will appear here.</div> <!-- Added class -->
+
+        <!-- Reveal Section (Initially Hidden) -->
+        <div class="submitted-drafts" id="submittedDraftsContainer" style="display: none;">
+            <h2>All Submitted Drafts (Revealed!)</h2>
+            <div id="allDrafts"></div>
+        </div>
+    </div>
+
+    <!-- General Status/Error Display -->
+    <div id="generalStatus" class="status-message error" style="display: none; margin-top: 20px;"></div>
+
+</body>
+</html>

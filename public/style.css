@@ -1,0 +1,389 @@
+/* --- Basic Reset & Body --- */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    line-height: 1.6;
+    color: #333;
+}
+
+header {
+    background: #002244; /* Dark blue */
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+/* --- Section Styling --- */
+.section {
+    padding: 25px 20px;
+    max-width: 600px;
+    margin: 25px auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.section h2 {
+    margin-top: 0;
+    color: #002244;
+    margin-bottom: 20px;
+}
+
+/* --- Form Elements --- */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    text-align: left;
+    font-size: 0.95em;
+    color: #555;
+}
+
+input[type="text"],
+textarea {
+    width: calc(100% - 24px); /* Full width minus padding/border */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    box-sizing: border-box; /* Include padding/border in width */
+}
+
+textarea {
+    min-height: 60px;
+    resize: vertical; /* Allow vertical resize */
+}
+
+#shareLinkInput {
+    font-size: 1.05em;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+button {
+    display: inline-block;
+    margin: 10px 5px;
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: bold;
+    background-color: #0044cc; /* Primary blue */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background-color: #003399; /* Darker blue */
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+}
+
+button:disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button.secondary {
+    background-color: #6c757d; /* Grey */
+}
+
+button.secondary:hover {
+    background-color: #5a6268; /* Darker grey */
+}
+
+
+/* --- Status & Error Messages --- */
+.status-message {
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+    border: 1px solid transparent; /* Base border */
+}
+
+.status-message.info {
+    background-color: #e3f2fd; /* Light blue */
+    color: #0d47a1; /* Darker blue text */
+    border-color: #bbdefb; /* Slightly darker blue border */
+}
+
+.status-message.error {
+    background-color: #f8d7da; /* Light red */
+    color: #721c24; /* Darker red text */
+    border-color: #f5c6cb; /* Slightly darker red border */
+}
+
+/* Specific error placements */
+#setupError, #loginStatus {
+    min-height: 1.5em; /* Prevent layout jumps */
+    margin-top: 10px;
+}
+
+
+/* --- Player Lists (Lobby/Login) --- */
+.player-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px auto;
+    max-width: 350px;
+    border: 1px solid #eee;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.player-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95em;
+    text-align: left;
+}
+
+.player-list li:last-child {
+    border-bottom: none;
+}
+
+.player-list li.ready {
+    color: #1e8e3e; /* Green */
+    font-weight: bold;
+}
+
+ .player-list li.submitted {
+    color: #1a237e; /* Dark Navy */
+    font-weight: bold;
+    font-style: italic;
+ }
+
+
+/* --- Draft Container & Lists --- */
+.container {
+    display: none; /* Initially hidden, controlled by JS */
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 25px auto;
+    /* No background/border needed, components inside have them */
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px; /* Increased gap */
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filters select, .filters input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.filters input[type="text"] {
+    min-width: 180px; /* Wider search box */
+}
+
+.lists-wrapper {
+    display: flex;
+    flex-direction: column; /* Stack on mobile */
+    gap: 20px;
+}
+
+/* --- Individual Player/Draft List Styling --- */
+.list {
+    flex: 1; /* Take up available space */
+    padding: 15px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    min-height: 500px;
+    max-height: 700px;
+    overflow-y: auto; /* Enable scroll */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.list h2 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #002244;
+    font-size: 1.3em;
+}
+
+#availablePlayersList, #draftSlots {
+    flex-grow: 1; /* Allow these divs to fill the space */
+    padding: 5px; /* Padding inside the scrollable area */
+}
+
+/* --- Player Draggable Item --- */
+.player {
+    display: block;
+    width: 95%;
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    margin: 5px auto;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 4px;
+    cursor: grab;
+    font-weight: bold;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    white-space: normal;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.player:hover {
+    background-color: #d1eafd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* SortableJS classes */
+.player.sortable-ghost {
+    background: #a7cffa !important; /* Use important to override */
+    opacity: 0.7;
+    border-style: dashed;
+}
+.player.sortable-chosen {
+    cursor: grabbing;
+    background-color: #bbdefb;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+.player.player-disabled {
+    background-color: #e0e0e0; /* Grey out disabled players */
+    color: #757575;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.player.player-disabled:hover {
+     box-shadow: none;
+}
+
+
+/* --- Draft Slot Styling --- */
+.draft-slot {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    margin: 4px 0;
+    background: #f8f9fa; /* Light grey background */
+    border: 1px dashed #ced4da; /* Dashed border */
+    border-radius: 4px;
+    min-height: 40px;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.draft-slot .pick-number {
+    font-weight: bold;
+    color: #6c757d; /* Grey number */
+    margin-right: 8px;
+    min-width: 25px;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+/* Style for the player div *inside* a slot */
+.draft-slot .player {
+    width: auto; /* Let it fill remaining space */
+    flex-grow: 1;
+    margin: 0; /* Reset margin */
+    font-size: 0.8rem; /* Slightly smaller */
+    padding: 4px 6px; /* Smaller padding */
+    box-shadow: none; /* Remove shadow inside slot */
+}
+
+.draft-slot.slot-filled {
+    border-style: solid;
+    border-color: #bbdefb; /* Blue border when filled */
+    background-color: #e3f2fd; /* Light blue background when filled */
+}
+
+/* --- Submitted Drafts Display --- */
+.submitted-drafts {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    /* display: none; */ /* Controlled by JS */
+}
+
+.submitted-drafts h2 {
+    text-align: center;
+    margin-top: 0;
+    color: #002244;
+}
+
+#allDrafts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+    gap: 20px; /* Gap between columns/rows */
+    margin-top: 20px;
+}
+
+.submission {
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 6px;
+    background-color: #fdfdfd;
+    font-size: 0.9em;
+}
+
+.submission strong {
+    display: block; /* Make username bold and on its own line */
+    margin-bottom: 10px;
+    color: #0044cc;
+    font-size: 1.1em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+.submission div {
+     padding: 2px 0; /* Spacing between picks */
+}
+
+
+/* --- Responsive Adjustments --- */
+@media (min-width: 768px) {
+    .lists-wrapper {
+        flex-direction: row; /* Side-by-side on larger screens */
+    }
+    .list {
+        min-width: 0; /* Allow lists to shrink */
+    }
+    header h1 {
+        font-size: 2.2em;
+    }
+}
+
+@media (min-width: 1024px) {
+    .filters {
+        justify-content: flex-start; /* Align filters left on large screens */
+    }
+}
