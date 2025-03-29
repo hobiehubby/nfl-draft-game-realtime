@@ -11,7 +11,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 // --- Static Middleware FIRST ---
-// Serve static files (index.html, client.js, style.css) from the 'public' directory
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- In-memory Storage ---
@@ -48,12 +48,12 @@ io.on('connection', (socket) => {
             games[gameId] = {
                 phase: 'login', expectedPlayers: expected, loggedInPlayers: {},
                 submittedPlayers: [], drafts: {}, creatorSocketId: socket.id,
-                playerData: playersData // Store player data with the game
+                playerData: playersData // Including player data with the game instance
             };
 
             console.log(`Game created: ${gameId} by ${socket.id}. Players: ${expected.join(', ')}`); // Log success
             socket.join(gameId);
-            socket.gameId = gameId;
+            socket.gameId = gameId; // Store gameId on socket
 
             socket.emit('gameCreated', { gameId, expectedPlayers: expected }); // Inform creator
 
@@ -65,14 +65,15 @@ io.on('connection', (socket) => {
 
     // --- Joining Game ---
     socket.on('requestJoin', ({ gameId, username }) => {
-         console.log(`DEBUG: Received 'requestJoin': gameId=${gameId}, username=${username} from ${socket.id}`); // Log reception
+         console.log(`DEBUG: Received 'requestJoin': gameId=${gameId}, username=${username} from ${socket.id}`); // Keep this log
         try {
             const game = games[gameId];
             if (!game) {
                 console.log(`DEBUG: Join attempt failed for ${socket.id} - Game "${gameId}" not found.`);
                 socket.emit('errorMsg', `Game "${gameId}" not found.`); return;
             }
-            if (game.phase !== 'login' && game.phase !== 'drafting') { // Allow joining during drafting for reconnects
+            // Allow joining during login or drafting (for reconnects)
+            if (game.phase !== 'login' && game.phase !== 'drafting') {
                  console.log(`DEBUG: Join attempt failed for ${socket.id} - Game "${gameId}" not in joinable phase (${game.phase}).`);
                 socket.emit('errorMsg', `Game not accepting players now (Phase: ${game.phase}).`); return;
             }
@@ -88,16 +89,18 @@ io.on('connection', (socket) => {
                  if (oldSocket) { oldSocket.emit('forceDisconnect', 'Logged in from another location.'); oldSocket.disconnect(true); }
             } else if (existingSocketId === socket.id) {
                  console.log(`User ${username} (${socket.id}) re-requesting join, resending state.`);
-                 socket.emit('joinSuccess', { username, gameState: getSanitizedGameState(gameId), draft: game.drafts[username] || null }); return;
+                 socket.emit('joinSuccess', { username, gameState: getSanitizedGameState(gameId), draft: game.drafts[username] || null });
+                 return; // Already joined with this socket
             }
 
+            // Join successful
             game.loggedInPlayers[username] = socket.id;
             socket.join(gameId);
             socket.username = username;
             socket.gameId = gameId;
 
             console.log(`User ${username} (${socket.id}) successfully joined game ${gameId}`);
-            const userDraft = game.drafts[username] || null;
+            const userDraft = game.drafts[username] || null; // Get draft state if exists (reconnect)
             socket.emit('joinSuccess', { username, gameState: getSanitizedGameState(gameId), draft: userDraft });
 
             io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId)); // Update everyone
@@ -120,18 +123,17 @@ io.on('connection', (socket) => {
             const gameId = socket.gameId; const username = socket.username; const game = games[gameId];
             if (!game || !username || game.phase !== 'drafting' || game.submittedPlayers.includes(username)) return;
             game.drafts[username] = draftPicks;
-            // console.log(`DEBUG: Draft updated for ${username} in ${gameId}`); // Optional: reduce noise
+            // console.log(`DEBUG: Draft updated for ${username} in ${gameId}`);
         } catch (error) { console.error(`Error updating draft for ${username} in game ${gameId}:`, error); }
     });
 
     // --- Submit Final Draft ---
     socket.on('submitDraft', (finalDraftPicks) => {
-        console.log(`DEBUG: Received 'submitDraft' from ${socket.username} (${socket.id}) for game ${socket.gameId}`); // Log reception
+        console.log(`DEBUG: Received 'submitDraft' from ${socket.username} (${socket.id}) for game ${socket.gameId}`);
         try {
             const gameId = socket.gameId; const username = socket.username; const game = games[gameId];
             if (!game || !username || game.phase !== 'drafting' || game.submittedPlayers.includes(username)) {
-                 console.log(`DEBUG: Submit draft rejected for ${username} (Invalid state)`);
-                 return; // Silently reject or send specific error
+                 console.log(`DEBUG: Submit draft rejected for ${username} (Invalid state)`); return;
             }
 
             game.submittedPlayers.push(username);
@@ -140,7 +142,6 @@ io.on('connection', (socket) => {
             socket.emit('submitSuccess'); // Confirm to submitter
             io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId)); // Update status for everyone
 
-            // Check if ready for reveal
             if (game.submittedPlayers.length === game.expectedPlayers.length) {
                 game.phase = 'reveal';
                 console.log(`Game ${gameId} entering reveal phase.`);
@@ -160,16 +161,11 @@ io.on('connection', (socket) => {
             const gameId = socket.gameId; const username = socket.username;
             if (gameId && games[gameId] && username) {
                  const game = games[gameId];
-                 if (game.loggedInPlayers[username] === socket.id) { // Only act if this was the active socket for the user
+                 if (game.loggedInPlayers[username] === socket.id) {
                     delete game.loggedInPlayers[username];
                     console.log(`User ${username} removed from loggedInPlayers in game ${gameId}.`);
-                    if (game.phase !== 'reveal') { // Don't update after game ended
-                         io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId));
-                    }
-                 } else {
-                     // This socket disconnected, but the user might have already reconnected with a new socket
-                     console.log(`Disconnected socket ${socket.id} was not the primary for user ${username} in game ${gameId}. No state change needed.`);
-                 }
+                    if (game.phase !== 'reveal') { io.to(gameId).emit('gameStateUpdate', getSanitizedGameState(gameId)); }
+                 } else { console.log(`Disconnected socket ${socket.id} not primary for ${username} in ${gameId}.`); }
             }
         } catch (error) { console.error(`Error during disconnect handling for ${socket.id}:`, error); }
     });
@@ -188,12 +184,40 @@ function getSanitizedGameState(gameId) {
     };
 }
 
+// --- Explicit Static Asset Routes --- <<<<<<<<<<<<<<<<<<<<<<<<<<<< NEW SECTION
+// Define these BEFORE the catch-all route
+app.get('/client.js', (req, res) => {
+    console.log(`Serving client.js explicitly for path: ${req.path}`);
+    res.sendFile(path.join(__dirname, 'public', 'client.js'), { headers: { 'Content-Type': 'application/javascript' } }, (err) => {
+        if (err) {
+            console.error("Error sending client.js:", err);
+            res.status(err.status || 500).end();
+        }
+    });
+});
+
+app.get('/style.css', (req, res) => {
+    console.log(`Serving style.css explicitly for path: ${req.path}`);
+    res.sendFile(path.join(__dirname, 'public', 'style.css'), { headers: { 'Content-Type': 'text/css' } }, (err) => {
+        if (err) {
+            console.error("Error sending style.css:", err);
+            res.status(err.status || 500).end();
+        }
+    });
+});
+// --- End of Explicit Static Asset Routes --- <<<<<<<<<<<<<<<<<<<<<<
+
 
 // --- Catch-all Route LAST ---
-// Sends index.html for any GET request not handled by static middleware
+// Sends index.html for any GET request not handled by static middleware or explicit routes
 app.get('*', (req, res) => {
-    console.log(`Serving index.html for path: ${req.path}`);
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    console.log(`Catch-all: Serving index.html for path: ${req.path}`);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+         if (err) {
+            console.error("Error sending index.html:", err);
+            res.status(err.status || 500).end();
+        }
+    });
 });
 
 
