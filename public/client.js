@@ -113,6 +113,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- End of function definition ---
 
+        // --- Add this function definition back ---
+        function updateSubmissionStatus() {
+            if (!currentGameState || !currentGameState.expectedPlayers || !submissionStatusDiv) {
+                 // Ensure element exists and we have game state
+                 if(submissionStatusDiv) submissionStatusDiv.textContent = 'Awaiting game data...';
+                 return;
+            };
+    
+            const submittedCount = currentGameState.submittedPlayers?.length || 0;
+            const totalPlayers = currentGameState.expectedPlayers.length;
+    
+            let statusText = `Submissions: ${submittedCount} / ${totalPlayers}`;
+            if (currentPhase === 'drafting' && submittedCount < totalPlayers) {
+                const waitingCount = totalPlayers - submittedCount;
+                statusText += ` (Waiting for ${waitingCount})`;
+            } else if (currentPhase === 'reveal' || submittedCount === totalPlayers) {
+                // Ensure correct message even if phase change is slightly delayed
+                 if (submittedCount === totalPlayers) {
+                    statusText += ` (All Submitted!)`;
+                 }
+            }
+            submissionStatusDiv.textContent = statusText;
+        }
+        // --- End of function definition ---
+
     // --- Socket Event Handlers ---
     socket.on('connect', () => {
         console.log('DEBUG: Socket connected.'); clearStatus(generalStatus);
