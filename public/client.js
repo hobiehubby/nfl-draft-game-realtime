@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Player Data (MUST BE CONSISTENT WITH server.js) ---
     // REPLACE THIS EXAMPLE WITH YOUR FULL PLAYER LIST
     const playersData = [
-        [
+        
             { name: "Travis Hunter", position: "WR/CB", school: "Colorado" },
             { name: "Abdul Carter", position: "Edge", school: "Penn State" },
             { name: "Tetairoa McMillan", position: "WR", school: "Arizona" },

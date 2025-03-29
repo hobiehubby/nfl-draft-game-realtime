@@ -18,7 +18,7 @@ let games = {}; // { gameId: { phase, expectedPlayers, loggedInPlayers, submitte
 // --- Player Data (MUST BE CONSISTENT WITH client.js) ---
 // REPLACE THIS EXAMPLE WITH YOUR FULL PLAYER LIST
 const playersData = [
-    [
+    
         { name: "Travis Hunter", position: "WR/CB", school: "Colorado" },
         { name: "Abdul Carter", position: "Edge", school: "Penn State" },
         { name: "Tetairoa McMillan", position: "WR", school: "Arizona" },
@@ -80,7 +80,7 @@ const playersData = [
         { name: "Jordan Addison", position: "WR", school: "USC" },
         { name: "Kayshon Boutte", position: "WR", school: "LSU" },
         { name: "Michael Mayer", position: "TE", school: "Notre Dame" }
-];
+    ];
 
 // --- Explicit Route for Root Path ---
 // Handles request to the base URL (e.g., https://your-app.onrender.com/)
