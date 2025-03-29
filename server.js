@@ -10,9 +10,7 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// --- Static Middleware FIRST ---
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
+// --- NO app.use(express.static(...)) - We use explicit routes below ---
 
 // --- In-memory Storage ---
 let games = {}; // { gameId: { phase, expectedPlayers, loggedInPlayers, submittedPlayers, drafts, playerData, creatorSocketId } }
@@ -27,8 +25,22 @@ const playersData = [
     { name: "Sonny Styles", position: "S", school: "Ohio State" },
 ];
 
+// --- Explicit Route for Root Path ---
+// Handles request to the base URL (e.g., https://your-app.onrender.com/)
+app.get('/', (req, res) => {
+    console.log(`Serving index.html explicitly for path: /`);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+        if (err) {
+            console.error("Error sending index.html for /:", err);
+            res.status(err.status || 500).end(); // Send error status if file fails
+        }
+    });
+});
+
 
 // --- Socket.IO Logic ---
+// This needs to be defined before the explicit asset routes in this setup,
+// as Socket.IO handles its own path (/socket.io/...) internally via the server instance.
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`); // Log basic connection
 
@@ -184,8 +196,9 @@ function getSanitizedGameState(gameId) {
     };
 }
 
-// --- Explicit Static Asset Routes --- <<<<<<<<<<<<<<<<<<<<<<<<<<<< NEW SECTION
-// Define these BEFORE the catch-all route
+
+// --- Explicit Static Asset Routes ---
+// These MUST come before the catch-all '*' route
 app.get('/client.js', (req, res) => {
     console.log(`Serving client.js explicitly for path: ${req.path}`);
     res.sendFile(path.join(__dirname, 'public', 'client.js'), { headers: { 'Content-Type': 'application/javascript' } }, (err) => {
@@ -205,19 +218,25 @@ app.get('/style.css', (req, res) => {
         }
     });
 });
-// --- End of Explicit Static Asset Routes --- <<<<<<<<<<<<<<<<<<<<<<
 
-
-// --- Catch-all Route LAST ---
-// Sends index.html for any GET request not handled by static middleware or explicit routes
+// --- Catch-all Route LAST (for SPA routing like /game/xxxx) ---
+// Sends index.html for any GET request not handled by explicit routes above
 app.get('*', (req, res) => {
     console.log(`Catch-all: Serving index.html for path: ${req.path}`);
-    res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
-         if (err) {
-            console.error("Error sending index.html:", err);
-            res.status(err.status || 500).end();
-        }
-    });
+    // Check if it looks like a file request potentially missed (e.g., has an extension)
+    // This helps prevent sending index.html for mistyped asset URLs
+    if (path.extname(req.path).length > 0 && req.path !== '/') { // Allow '/' through
+         console.log(`Catch-all WARNING: Path ${req.path} looks like a file but was not served explicitly. Sending 404.`);
+         res.status(404).end(); // Send 404 if it looks like a file wasn't found
+    } else {
+        // Otherwise, assume it's a client-side route path and send index.html
+        res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+            if (err) {
+                console.error("Error sending index.html via catch-all:", err);
+                res.status(err.status || 500).end(); // Send error status if file fails
+            }
+        });
+    }
 });
 
 
