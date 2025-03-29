@@ -314,7 +314,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Other listeners
-    copyLinkButton?.addEventListener('click', () => { /* ... copy logic ... */ }); // Added optional chaining '?'
+    if (copyLinkButton) {
+        copyLinkButton.addEventListener('click', () => {
+            shareLinkInput.select();
+            shareLinkInput.setSelectionRange(0, 99999); // For mobile devices
+            try {
+                let copied = false;
+                // Use Clipboard API if available (more modern)
+                if (navigator.clipboard) {
+                   navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+                        copied = true;
+                        alert('Link copied!');
+                    }).catch(err => {
+                        console.warn('Clipboard API copy failed, trying fallback:', err);
+                        // Fallback needed
+                        copied = document.execCommand('copy');
+                        if (copied) {
+                           alert('Link copied (fallback method).');
+                        } else {
+                           throw new Error('execCommand failed');
+                        }
+                    });
+                } else {
+                     // Fallback for very old browsers
+                     copied = document.execCommand('copy');
+                     if (copied) {
+                        alert('Link copied (fallback method).');
+                     } else {
+                        throw new Error('execCommand failed');
+                     }
+                }
+            } catch (err) {
+                console.error('Copying failed overall:', err);
+                alert('Failed to copy link automatically. Please copy it manually.');
+            }
+        });
+    } else {
+        console.error("ERROR: copyLinkButton not found, cannot attach click listener.");
+    }
     loginButton?.addEventListener('click', () => { /* ... login logic ... */ }); // Added '?'
     usernameInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginButton?.click(); }); // Added '?'
 
