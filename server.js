@@ -79,7 +79,7 @@ const playersData = [
         { name: "Jahmyr Gibbs", position: "RB", school: "Alabama" },
         { name: "Jordan Addison", position: "WR", school: "USC" },
         { name: "Kayshon Boutte", position: "WR", school: "LSU" },
-        { name: "Michael Mayer", position: "TE", school: "Notre Dame" },
+        { name: "Michael Mayer", position: "TE", school: "Notre Dame" }
 ];
 
 // --- Explicit Route for Root Path ---

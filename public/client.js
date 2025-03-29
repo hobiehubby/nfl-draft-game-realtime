@@ -123,7 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
             { name: "Jahmyr Gibbs", position: "RB", school: "Alabama" },
             { name: "Jordan Addison", position: "WR", school: "USC" },
             { name: "Kayshon Boutte", position: "WR", school: "LSU" },
-            { name: "Michael Mayer", position: "TE", school: "Notre Dame" },
+            { name: "Michael Mayer", position: "TE", school: "Notre Dame" }
+
+        ];
             
         ::contentReference[oaicite:2]{index=2}
          
