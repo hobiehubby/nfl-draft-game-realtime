@@ -86,6 +86,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clearStatus(element = generalStatus) { displayStatus('', element); }
 
+    // --- Add this function definition back ---
+    function updatePlayerStatusList(listElement, gameState) {
+        if (!listElement || !gameState || !gameState.expectedPlayers) {
+            // Clear list if elements missing or no expected players
+            if (listElement) listElement.innerHTML = '';
+            return;
+        }
+        listElement.innerHTML = ''; // Clear current list
+        gameState.expectedPlayers.forEach(player => {
+            const li = document.createElement('li');
+            let status = '';
+            let liClass = '';
+            if (gameState.loggedInUsernames?.includes(player)) {
+                status = ' (Ready)';
+                liClass = 'ready';
+            }
+            if (gameState.submittedPlayers?.includes(player)) {
+                status = ' (Submitted)';
+                liClass = 'submitted'; // Submitted overrides ready
+            }
+            li.textContent = `${player}${status}`;
+            if (liClass) li.className = liClass;
+            listElement.appendChild(li);
+        });
+    }
+    // --- End of function definition ---
+
     // --- Socket Event Handlers ---
     socket.on('connect', () => {
         console.log('DEBUG: Socket connected.'); clearStatus(generalStatus);
